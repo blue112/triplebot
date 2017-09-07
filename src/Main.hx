@@ -1,10 +1,15 @@
 using Lambda;
 
+import RegTree;
+
 class Main
 {
     static public function main()
     {
-        generateTrainingData();
+        var trainingData = haxe.Timer.measure(generateTrainingData.bind(5000));
+
+        var rt = new RegTree();
+        rt.train(trainingData);
     }
 
     static public function getAvailableMoves(g:Game)
@@ -18,32 +23,34 @@ class Main
         return m;
     }
 
-    static public function generateTrainingData()
+    static public function generateTrainingData(numPlays:Int):Array<Sample>
     {
-        var scores = [];
-        for (i in 0...10000)
+        var samples = [];
+        for (i in 0...numPlays)
         {
             var g = new Game();
             // play until no moves are available
             var moves = [];
+            var movesPlayed = [];
             while ((moves = getAvailableMoves(g)).length > 0)
             {
                 var moveToPlay = moves[Std.random(moves.length)];
+
+                movesPlayed.push(g.getAllNeigh(moveToPlay));
+
                 g.play({x: moveToPlay.x, y: moveToPlay.y}, GRASS);
             }
 
             var score = GameScore.scoreBoard(g.getBoard());
-            scores.push(score);
+
+            for (p in movesPlayed)
+            {
+                samples.push({variables: p, score: score});
+            }
             //trace(GameRenderer.toAscii(g.getBoard()));
         }
 
-        var total = scores.fold(function(n, t) return t + n, 0);
-        trace("Mean: "+(total/scores.length));
-
-        var min = scores.fold(function(n, t) return if (n < t) n else t, 9999);
-        var max = scores.fold(function(n, t) return if (n > t) n else t, 0);
-        trace("Min: "+min);
-        trace("Max: "+max);
+        return samples;
     }
 
     #if js

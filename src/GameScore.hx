@@ -12,6 +12,8 @@ class GameScore
             case TREE: 4;
             case HUT: 8;
             case HOUSE: 16;
+            case MANSION: 32;
+            case CASTLE: 64;
         }
     }
 

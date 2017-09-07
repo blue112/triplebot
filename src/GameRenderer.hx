@@ -18,6 +18,10 @@ class GameRenderer
                 "A";
             case HOUSE:
                 "@";
+            case MANSION:
+                "M";
+            case CASTLE:
+                "§";
         }
     }
 

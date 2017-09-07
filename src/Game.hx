@@ -23,6 +23,8 @@ enum TileType
     TREE;
     HUT;
     HOUSE;
+    MANSION;
+    CASTLE;
 }
 
 class Game
@@ -36,7 +38,7 @@ class Game
     {
         return switch (type)
         {
-            case EMPTY, HOUSE:
+            case EMPTY, CASTLE:
                 EMPTY;
             case GRASS:
                 BUSH;
@@ -46,6 +48,10 @@ class Game
                 HUT;
             case HUT:
                 HOUSE;
+            case HOUSE:
+                MANSION;
+            case MANSION:
+                CASTLE;
         }
     }
 
@@ -96,6 +102,26 @@ class Game
 
         resolve();
         return true;
+    }
+
+    public function getAllNeigh(position:Position)
+    {
+        var tile = getTileAt(position);
+        if (tile == null)
+            return [];
+
+        var out = [];
+        var dir = [[0, -1], [0, 1], [1, 0], [-1, 0]];
+        for (i in dir)
+        {
+            var c = getTileAt({x: tile.x + i[0], y: tile.y + i[1]});
+            if (c != null)
+                out.push(Std.string(c.type));
+            else
+                out.push("");
+        }
+
+        return out;
     }
 
     private function getNeigh(tile:Tile, exclude:Array<Tile>)
