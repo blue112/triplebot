@@ -90,7 +90,6 @@ class Game
 
     public function play(pos:Position, type:TileType):Bool
     {
-        //trace("Playing "+type+" at "+pos.x+";"+pos.y);
         var tile = getTileAt(pos);
         if (tile.type != EMPTY)
             return false;
@@ -116,7 +115,7 @@ class Game
         {
             var c = getTileAt({x: tile.x + i[0], y: tile.y + i[1]});
             if (c != null)
-                out.push(Std.string(c.type));
+                out.push(GameRenderer.getSymbol(c.type));
             else
                 out.push("");
         }

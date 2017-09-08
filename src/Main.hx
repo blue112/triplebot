@@ -1,12 +1,15 @@
 using Lambda;
 
+import haxe.ds.StringMap;
 import RegTree;
 
 class Main
 {
     static public function main()
     {
-        var trainingData = haxe.Timer.measure(generateTrainingData.bind(5000));
+        var trainingData = generateTrainingData(10000);
+
+        trace('Generated ${trainingData.length} samples');
 
         var rt = new RegTree();
         rt.train(trainingData);
@@ -25,7 +28,7 @@ class Main
 
     static public function generateTrainingData(numPlays:Int):Array<Sample>
     {
-        var samples = [];
+        var samples:StringMap<Sample> = new StringMap();
         for (i in 0...numPlays)
         {
             var g = new Game();
@@ -45,12 +48,27 @@ class Main
 
             for (p in movesPlayed)
             {
-                samples.push({variables: p, score: score});
+                var moveStr = p.join(",");
+                var move = samples.get(moveStr);
+                if (move != null)
+                {
+                    move.score = ((move.score * move.n) + score) / (move.n + 1);
+                    move.n++;
+                }
+                else
+                {
+                    samples.set(moveStr, {variables: p, score: score, n: 1});
+                }
             }
             //trace(GameRenderer.toAscii(g.getBoard()));
+
+            if (i % (numPlays / 20) == 0)
+            {
+                trace('$i / $numPlays');
+            }
         }
 
-        return samples;
+        return samples.array();
     }
 
     #if js

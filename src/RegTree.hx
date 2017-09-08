@@ -22,7 +22,8 @@ typedef Node =
 typedef Sample =
 {
     var variables: Array<Dynamic>;
-    var score: Int;
+    var score:Float;
+    var n:Int;
 }
 
 class RegTree
@@ -38,9 +39,44 @@ class RegTree
 
     public function train(data:Array<Sample>)
     {
-        split(data, main_node);
+        // Split data
+        var growData = data.slice(0, Std.int(data.length / 2));
+        var pruneData = data.slice(Std.int(data.length / 2));
 
-        trace(getDepth(main_node));
+        //Grow
+        split(growData, main_node);
+
+        trace("Before pruning: "+getDepth(main_node)+" depth");
+        //trace(haxe.Serializer.run(main_node));
+
+        prune(pruneData, main_node);
+        trace("After pruning: "+getDepth(main_node)+" depth");
+    }
+
+    private function prune(pruneData:Array<Sample>, node:Node)
+    {
+        var currentImpurity = getImpurity(pruneData);
+
+        if (node.left_path == null || node.right_path == null)
+            return false;
+
+        var left_data = filterData(pruneData, node.left_path.condition, true);
+        var right_data = filterData(pruneData, node.right_path.condition, false);
+        var child_impurity = getImpurity(left_data) + getImpurity(right_data);
+
+        if (child_impurity >= currentImpurity * 0.99)
+        {
+            // Prune myself
+            node.left_path = null;
+            node.right_path = null;
+            return true;
+        }
+        else
+        {
+            prune(left_data, node.left_path.next_node);
+            prune(right_data, node.right_path.next_node);
+            return false;
+        }
     }
 
     private function getDepth(node:Node, d:Int = 0)
@@ -65,43 +101,43 @@ class RegTree
 
     private function split(data:Array<Sample>, node:Node)
     {
-        if (data.length == 0)
+        if (data.length <= 1)
             return;
 
-        var differentValues = dedup(data.map(function (d) return d.variables.join(",")));
-        if (differentValues.length == 1)
-            return;
-
-        var possibleValues = [];
-        var variableChoosen = 0;
-        while (possibleValues.length < 1)
+        var possibleVariableValues = [];
+        for (i in 0...data[0].variables.length)
         {
-            variableChoosen = Std.random(data[0].variables.length);
-            possibleValues = dedup(data.map(function(d) return d.variables[variableChoosen]));
+            var possibleValues = dedup(data.map(function(d) return d.variables[i]));
+            if (possibleValues.length > 1)
+            {
+                for (n in possibleValues)
+                    possibleVariableValues.push({variable: i, value: n});
+            }
         }
 
         var min:Float = -1;
         var choosenValue = "";
+        var variableChoosen = 0;
 
         var c:Condition =
         {
-            variable_n: variableChoosen,
+            variable_n: 0,
             variable_values: [],
         };
-        for (i in possibleValues)
+        for (i in possibleVariableValues)
         {
-            c.variable_values = [i];
+            c.variable_n = i.variable;
+            c.variable_values = [i.value];
             var total = getImpurity(filterData(data, c, true)) + getImpurity(filterData(data, c, false));
             if (min == -1 || total < min)
             {
                 min = total;
-                choosenValue = i;
+                choosenValue = i.value;
+                variableChoosen = i.variable;
             }
         }
 
-        var left_node = {end_value: 0
-        };
-
+        var left_node = {end_value: 0};
         var right_node = {end_value: 0};
 
         var finalCondition = {
@@ -140,7 +176,12 @@ class RegTree
         return out;
     }
 
-    public function getImpurity(samples:Array<Sample>)
+    public function getAVG(samples:Array<Sample>)
+    {
+        return samples.fold(function(sample, t) return t + sample.score, 0) / samples.length;
+    }
+
+    public inline function getImpurity(samples:Array<Sample>)
     {
         // Get average score
         var avg = samples.fold(function(sample, t) return t + sample.score, 0) / samples.length;
